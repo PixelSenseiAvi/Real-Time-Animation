@@ -41,6 +41,9 @@ private:
 
 	GLuint count;
 
+	GLfloat disatnceFromthePlayer = 50.;
+	GLfloat angle = 0.;
+
 	void update();
 };
 

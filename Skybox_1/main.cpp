@@ -47,7 +47,7 @@ Camera camera;
 Material shinyMaterial;
 Material dullMaterial;
 
-Model sphere;
+Model sphere, propeller;
 
 glm::mat4 model;
 
@@ -72,6 +72,7 @@ static const char* vShader = "Shaders/shader.vert";
 // Fragment Shader
 static const char* fShader = "Shaders/shader.frag";
 
+GLboolean rot;
 
 /*
 void calcAverageNormals(unsigned int * indices, unsigned int indiceCount, GLfloat * vertices, unsigned int verticeCount, 
@@ -118,9 +119,10 @@ void RenderScene()
 	model = glm::translate(model, glm::vec3(0.0f, 2.0f, -2.5f));
 	model = glm::scale(model, glm::vec3(2.f, 2.f, 2.f));
 	
-	model = model * mat_cast * mat_cast1 * mat_cast2;
+	model = model * mat_cast;
+		//* mat_cast1 * mat_cast2;
 
-	objectCoord = glm::inverse(model);
+	objectCoord = glm::mat4();
 	objectCoord = glm::rotate(objectCoord, glm::radians(180.f), glm::vec3(0, 1, 0));
 	objectCoord = glm::translate(objectCoord, glm::vec3(0.,-3.,0.));
 
@@ -177,81 +179,176 @@ void RenderPass(glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
 
 void bind_keys(bool* keys, GLfloat deltaTime)
 {
-
-	if (keys[GLFW_KEY_UP])
-	{
-		if (rollAngle < 90.f) {
-			rollAngle += 2.f;
-		}
-		else {
-			rollAngle = 90.f;
-		}
-		Quat *= glm::quat(0, cos(glm::radians(rollAngle / 2)), 0, sin(glm::radians(rollAngle / 2)));
+	if (keys[GLFW_KEY_E]) {
+		if (rot == false) { rot = true; }
+		else { rot = false; }
 	}
 
-	if (keys[GLFW_KEY_DOWN])
-	{
-		if (rollAngle > -90.f) {
-			rollAngle -= 2.f;
+	//Euler
+	if (rot == true) {
+		if (keys[GLFW_KEY_UP])
+		{
+			if (rollAngle < 90.f) {
+				rollAngle += 2.f;
+			}
+			else {
+				rollAngle = 90.f;
+			}
+			//check for radians later
+			mat_cast = glm::rotate(mat_cast, rollAngle, glm::vec3(0, 1, 0));
 		}
-		else {
-			rollAngle = 90.f;
+		if (keys[GLFW_KEY_DOWN])
+		{
+			if (rollAngle < 90.f) {
+				rollAngle -= 2.f;
+			}
+			else {
+				rollAngle = 90.f;
+			}
+			//check for radians later
+			mat_cast = glm::rotate(mat_cast, rollAngle, glm::vec3(0, 1, 0));
 		}
-		Quat *= glm::quat(0, cos(glm::radians(rollAngle / 2)), 0, sin(glm::radians(rollAngle / 2)));
+		if (keys[GLFW_KEY_LEFT])
+		{
+			if (angle > -90.f) {
+				angle -= 2.f;
+			}
+			else {
+				angle = 90.f;
+			}
+			//check for radians later
+			mat_cast1 = glm::rotate(mat_cast, angle, glm::vec3(1, 0, 0));
+		}
+		if (keys[GLFW_KEY_RIGHT])
+		{
+			if (angle > -90.f) {
+				angle += 2.f;
+			}
+			else {
+				angle = 90.f;
+			}
+			//check for radians later
+			mat_cast1 = glm::rotate(mat_cast, angle, glm::vec3(1, 0, 0));
+		}
+		if (keys[GLFW_KEY_K])
+		{
+			if (pitchAngle > -90.f) {
+				pitchAngle -= 2.f;
+			}
+			else {
+				pitchAngle = 90.f;
+			}
+			//check for radians later
+			mat_cast2 = glm::rotate(mat_cast, pitchAngle, glm::vec3(0, 0, 1));
+		}
+		if (keys[GLFW_KEY_L])
+		{
+			if (pitchAngle > -90.f) {
+				pitchAngle += 2.f;
+			}
+			else {
+				pitchAngle = 90.f;
+			}
+			//check for radians later
+			mat_cast2 = glm::rotate(mat_cast, pitchAngle, glm::vec3(0, 0, 1));
+		}
+	}
+	//quaternion
+	else {
+		//try negating other axis w.r.t. to the axis of rotation
+
+		if (keys[GLFW_KEY_UP])
+		{
+			if (rollAngle < 3.14f) {
+				rollAngle += .1f;
+			}else {
+				rollAngle = .0f;
+				//Quat *= glm::quat(0, 0, cos(3.14f), sin(3.14f));
+			}
+			Quat *= glm::quat(0, cos(rollAngle), 0, sin(rollAngle));
+
+			mat_cast *= glm::mat4_cast(Quat);
+		}
+
+		if (keys[GLFW_KEY_DOWN])
+		{
+			if (rollAngle > -3.14f) {
+				rollAngle -= 0.1f;
+			}
+			else {
+				rollAngle = .0f;
+				Quat *= glm::quat(0, 0, cos(-3.14), sin(-3.14));
+			}
+			Quat *= glm::quat(0, cos(rollAngle), 0, sin(rollAngle));
+
+			mat_cast *= glm::mat4_cast(Quat);
+		}
+
+		if (keys[GLFW_KEY_LEFT])
+		{
+
+			if (angle > -3.14f) {
+				angle -= .1f;
+			}
+			else {
+				angle = -3.14f;
+			}
+			rollQuat *= glm::quat(cos(angle), 0, 0, sin(angle));
+
+			mat_cast *= glm::mat4_cast(rollQuat);
+		}
+
+		if (keys[GLFW_KEY_RIGHT])
+		{
+			if (angle < 3.14f) {
+				angle += .1f;
+			}
+			else {
+				angle = 0.0f;
+			}
+			rollQuat *= glm::quat(cos(angle), 0, 0, sin(angle));
+
+			mat_cast *= glm::mat4_cast(rollQuat);
+		}
+		if (keys[GLFW_KEY_K])
+		{
+			if (pitchAngle > -3.14f) {
+				pitchAngle -= .1f;
+			}
+			else {
+				pitchAngle = 0.f;
+			}
+
+			pitchQuat *= glm::quat(0, 0, cos(pitchAngle), sin(pitchAngle));
+
+			mat_cast *= glm::mat4_cast(pitchQuat);
+		}
+		if (keys[GLFW_KEY_L])
+		{
+			if (pitchAngle < 3.14f) {
+				pitchAngle += .1f;
+			}
+			else {
+				pitchAngle = 0.f;
+			}
+			pitchQuat *= glm::quat(0, 0, cos(pitchAngle), sin(pitchAngle));
+
+			mat_cast *= glm::mat4_cast(pitchQuat);
+		}
+
+		/*
+		mat_cast = glm::mat4_cast(Quat);
+		mat_cast1 = glm::mat4_cast(rollQuat);
+		mat_cast2 = glm::mat4_cast(pitchQuat);
+		*/
 	}
 
-	if (keys[GLFW_KEY_LEFT])
-	{
-		
-		if (angle > -90.f) {
-			angle -= 2.f;
-		}
-		else {
-			angle = 90.f;
-		}
-		rollQuat *= glm::quat(cos(glm::radians(angle / 2)), 0, 0, sin(glm::radians(angle / 2)));
-	}
-
-	if (keys[GLFW_KEY_RIGHT])
-	{
-		if (angle < 90.f) {
-			angle += 2.f;
-		}
-		else {
-			angle = 90.f;
-		}
-		rollQuat *= glm::quat(cos(glm::radians(angle / 2)), 0, 0, sin(glm::radians(angle / 2)));
-	}
-	if (keys[GLFW_KEY_K])
-	{
-		if (pitchAngle > -90.f) {
-			pitchAngle -= 2.f;
-		}
-		else {
-			pitchAngle = 90.f;
-		}
-		
-		pitchQuat *= glm::quat(0, 0, cos(glm::radians(pitchAngle / 2)), sin(glm::radians(pitchAngle / 2)));
-	}
-	if (keys[GLFW_KEY_L]) 
-	{
-		if(pitchAngle < 90.f){
-			pitchAngle += 2.f;
-		}
-		else {
-			pitchAngle = 90.f;
-		}
-		pitchQuat *= glm::quat(0, 0, cos(glm::radians(pitchAngle / 2)), sin(glm::radians(pitchAngle / 2)));
-	}
-
-	mat_cast = glm::mat4_cast(Quat);
-	mat_cast1 = glm::mat4_cast(rollQuat);
-	mat_cast2 = glm::mat4_cast(pitchQuat);
 }
 
 
 int main() 
 {
+	rot = false;
 	mat_cast = glm::mat4();
 	mat_cast1 = glm::mat4();
 	mat_cast2 = glm::mat4();
@@ -309,14 +406,13 @@ int main()
 		//RenderPass(camera.calculateViewMatrix(), projection);
 
 		if (camera.firstPerson) {
-			RenderPass(objectCoord, projection);
+			RenderPass(glm::inverse(model)*objectCoord, projection);
 		}else if (camera.thirdPerson) {
 			//change here for the third person
 			RenderPass(camera.calculateViewMatrix(), projection);
 		}else {
 			RenderPass(camera.calculateViewMatrix(), projection);
 		}
-
 
 		mainWindow.swapBuffers();
 	}
