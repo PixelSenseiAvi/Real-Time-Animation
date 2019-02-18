@@ -62,7 +62,7 @@ GLuint skyboxLocation;
 GLfloat angle =0.f, rollAngle = 0.f, pitchAngle = 0.f;
 glm::quat Quat, rollQuat, pitchQuat;
 glm::mat4 mat_cast, mat_cast1, mat_cast2;
-GLfloat roll =0., pitch =0., yaw =0.;
+GLfloat roll =0.f, pitch =0.f, yaw =0.f;
 
 GLboolean ifroll, ifyaw, ifpitch;
 
@@ -124,7 +124,7 @@ void RenderScene()
 
 	objectCoord = glm::mat4();
 	objectCoord = glm::rotate(objectCoord, glm::radians(180.f), glm::vec3(0, 1, 0));
-	objectCoord = glm::translate(objectCoord, glm::vec3(0.,-3.,0.));
+	objectCoord = glm::translate(objectCoord, glm::vec3(0.f,-3.f,0.f));
 
 	glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 	shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
@@ -132,7 +132,8 @@ void RenderScene()
 	planeTexture.UseTexture();
 	//set 0 to the above
 	sphere.RenderModel();
-
+	
+	propeller.RenderModel();
 }
 
 
@@ -158,7 +159,7 @@ void RenderPass(glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
 	uniformModel = shaderList[0].GetModelLocation();
 	uniformProjection = shaderList[0].GetProjectionLocation();
 	uniformView = shaderList[0].GetViewLocation();
-	uniformModel = shaderList[0].GetModelLocation();
+	//uniformModel = shaderList[0].GetModelLocation();
 	uniformEyePosition = shaderList[0].GetEyePositionLocation();
 	uniformSpecularIntensity = shaderList[0].GetSpecularIntensityLocation();
 	uniformShininess = shaderList[0].GetShininessLocation();
@@ -256,17 +257,25 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 	//quaternion
 	else {
 		//try negating other axis w.r.t. to the axis of rotation
-
+		//reference: https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
+		
+		GLfloat q0, q1, q2, q3, mag;
+		
+		//yaw
 		if (keys[GLFW_KEY_UP])
 		{
 			if (rollAngle < 3.14f) {
 				rollAngle += .1f;
 			}else {
-				rollAngle = .0f;
-				//Quat *= glm::quat(0, 0, cos(3.14f), sin(3.14f));
+				rollAngle = 3.14f;
 			}
-			Quat *= glm::quat(0, cos(rollAngle), 0, sin(rollAngle));
-
+			q0 = cos(rollAngle / 2); q1 = 0;  q2 = sin(rollAngle / 2); q3 = 0;
+			//calculating magnitude for normalizing
+			mag = sqrt(q0*q0 + q2*q2);
+			q0 /= mag;
+			q2 /= mag;
+			
+			Quat *= glm::quat(q0, q1,q2,q3);
 			mat_cast *= glm::mat4_cast(Quat);
 		}
 
@@ -276,17 +285,20 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 				rollAngle -= 0.1f;
 			}
 			else {
-				rollAngle = .0f;
-				Quat *= glm::quat(0, 0, cos(-3.14), sin(-3.14));
+				rollAngle = -3.14f;
 			}
-			Quat *= glm::quat(0, cos(rollAngle), 0, sin(rollAngle));
+			q0 = cos(rollAngle / 2); q1 = 0;  q2 = sin(rollAngle / 2); q3 = 0;
+			//calculating magnitude for normalizing
+			mag = sqrt(q0*q0 + q2 * q2);
+			q0 /= mag;
+			q2 /= mag;
 
+			Quat *= glm::quat(q0, q1, q2, q3);
 			mat_cast *= glm::mat4_cast(Quat);
 		}
 
 		if (keys[GLFW_KEY_LEFT])
 		{
-
 			if (angle > -3.14f) {
 				angle -= .1f;
 			}
@@ -294,7 +306,6 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 				angle = -3.14f;
 			}
 			rollQuat *= glm::quat(cos(angle), 0, 0, sin(angle));
-
 			mat_cast *= glm::mat4_cast(rollQuat);
 		}
 
@@ -304,7 +315,7 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 				angle += .1f;
 			}
 			else {
-				angle = 0.0f;
+				angle = 3.14f;
 			}
 			rollQuat *= glm::quat(cos(angle), 0, 0, sin(angle));
 
@@ -350,8 +361,6 @@ int main()
 {
 	rot = false;
 	mat_cast = glm::mat4();
-	mat_cast1 = glm::mat4();
-	mat_cast2 = glm::mat4();
 
 	Quat = glm::quat();
 	rollQuat = glm::quat();
@@ -373,6 +382,9 @@ int main()
 	//Load Textures
 	planeTexture = Texture("Textures/plane_diffuse.jpg");
 	planeTexture.LoadTextureA();
+
+	propeller = Model();
+	propeller.LoadModel("Plane/propeller.obj");
 
 
 	std::vector<std::string> skyboxFaces;
