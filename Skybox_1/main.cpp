@@ -6,12 +6,12 @@
 #include <vector>
 
 #include <glew\glew.h>
-#include <GLFW\glfw3.h>
 
 #include <glm\glm.hpp>
 #include <glm\gtc\matrix_transform.hpp>
 #include <glm\gtc\type_ptr.hpp>
 
+#include <GLFW/glfw3.h>
 #include "CommonValues.h"
 
 #include "Window.h"
@@ -61,7 +61,7 @@ GLuint skyboxLocation;
 
 GLfloat angle =0.f, rollAngle = 0.f, pitchAngle = 0.f;
 glm::quat Quat, rollQuat, pitchQuat;
-glm::mat4 mat_cast, mat_cast1, mat_cast2;
+glm::mat4 mat_cast;
 GLfloat roll =0.f, pitch =0.f, yaw =0.f;
 
 GLboolean ifroll, ifyaw, ifpitch;
@@ -72,37 +72,8 @@ static const char* vShader = "Shaders/shader.vert";
 // Fragment Shader
 static const char* fShader = "Shaders/shader.frag";
 
-GLboolean rot;
-
-/*
-void calcAverageNormals(unsigned int * indices, unsigned int indiceCount, GLfloat * vertices, unsigned int verticeCount, 
-						unsigned int vLength, unsigned int normalOffset)
-{
-	for (size_t i = 0; i < indiceCount; i += 3)
-	{
-		unsigned int in0 = indices[i] * vLength;
-		unsigned int in1 = indices[i + 1] * vLength;
-		unsigned int in2 = indices[i + 2] * vLength;
-		glm::vec3 v1(vertices[in1] - vertices[in0], vertices[in1 + 1] - vertices[in0 + 1], vertices[in1 + 2] - vertices[in0 + 2]);
-		glm::vec3 v2(vertices[in2] - vertices[in0], vertices[in2 + 1] - vertices[in0 + 1], vertices[in2 + 2] - vertices[in0 + 2]);
-		glm::vec3 normal = glm::cross(v1, v2);
-		normal = glm::normalize(normal);
-		
-		in0 += normalOffset; in1 += normalOffset; in2 += normalOffset;
-		vertices[in0] += normal.x; vertices[in0 + 1] += normal.y; vertices[in0 + 2] += normal.z;
-		vertices[in1] += normal.x; vertices[in1 + 1] += normal.y; vertices[in1 + 2] += normal.z;
-		vertices[in2] += normal.x; vertices[in2 + 1] += normal.y; vertices[in2 + 2] += normal.z;
-	}
-
-	for (size_t i = 0; i < verticeCount / vLength; i++)
-	{
-		unsigned int nOffset = i * vLength + normalOffset;
-		glm::vec3 vec(vertices[nOffset], vertices[nOffset + 1], vertices[nOffset + 2]);
-		vec = glm::normalize(vec);
-		vertices[nOffset] = vec.x; vertices[nOffset + 1] = vec.y; vertices[nOffset + 2] = vec.z;
-	}
-}
-*/
+bool rot;
+glm::mat4 thirdPerson;
 
 
 void CreateShaders()
@@ -118,9 +89,13 @@ void RenderScene()
 	model = glm::mat4();
 	model = glm::translate(model, glm::vec3(0.0f, 2.0f, -2.5f));
 	model = glm::scale(model, glm::vec3(2.f, 2.f, 2.f));
+	//model = glm::rotate(model, 3.14f, glm::vec3(0, 1, 0));
 	
 	model = model * mat_cast;
 		//* mat_cast1 * mat_cast2;
+
+	//if 3rd person is enabled -> assign camera to matrix
+	thirdPerson = glm::translate(model, glm::vec3(camera.offset.x, camera.offset.y, camera.offset.z));
 
 	objectCoord = glm::mat4();
 	objectCoord = glm::rotate(objectCoord, glm::radians(180.f), glm::vec3(0, 1, 0));
@@ -133,7 +108,7 @@ void RenderScene()
 	//set 0 to the above
 	sphere.RenderModel();
 	
-	propeller.RenderModel();
+	//propeller.RenderModel();
 }
 
 
@@ -144,13 +119,6 @@ void RenderPass(glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	/*
-	if (camera.firstPerson) {
-		viewMatrix = glm::translate(viewMatrix, glm::vec3(0, -3, 0));
-		viewMatrix = glm::rotate(viewMatrix, glm::radians(180.f), glm::vec3(0., 1., 0.));
-
-	}*/
 
 	skybox.DrawSkybox(viewMatrix, projectionMatrix);
 
@@ -180,6 +148,7 @@ void RenderPass(glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
 
 void bind_keys(bool* keys, GLfloat deltaTime)
 {
+	//GLfloat velocity = deltaTime *;
 	if (keys[GLFW_KEY_E]) {
 		if (rot == false) { rot = true; }
 		else { rot = false; }
@@ -218,7 +187,7 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 				angle = 90.f;
 			}
 			//check for radians later
-			mat_cast1 = glm::rotate(mat_cast, angle, glm::vec3(1, 0, 0));
+			mat_cast = glm::rotate(mat_cast, angle, glm::vec3(1, 0, 0));
 		}
 		if (keys[GLFW_KEY_RIGHT])
 		{
@@ -229,7 +198,7 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 				angle = 90.f;
 			}
 			//check for radians later
-			mat_cast1 = glm::rotate(mat_cast, angle, glm::vec3(1, 0, 0));
+			mat_cast = glm::rotate(mat_cast, angle, glm::vec3(1, 0, 0));
 		}
 		if (keys[GLFW_KEY_K])
 		{
@@ -240,7 +209,7 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 				pitchAngle = 90.f;
 			}
 			//check for radians later
-			mat_cast2 = glm::rotate(mat_cast, pitchAngle, glm::vec3(0, 0, 1));
+			mat_cast = glm::rotate(mat_cast, pitchAngle, glm::vec3(0, 0, 1));
 		}
 		if (keys[GLFW_KEY_L])
 		{
@@ -251,7 +220,7 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 				pitchAngle = 90.f;
 			}
 			//check for radians later
-			mat_cast2 = glm::rotate(mat_cast, pitchAngle, glm::vec3(0, 0, 1));
+			mat_cast = glm::rotate(mat_cast, pitchAngle, glm::vec3(0, 0, 1));
 		}
 	}
 	//quaternion
@@ -265,12 +234,12 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 		if (keys[GLFW_KEY_UP])
 		{
 			if (rollAngle < 3.14f) {
-				rollAngle += .1f;
+				rollAngle += .001f;
 			}else {
 				rollAngle = 3.14f;
 			}
 			q0 = cos(rollAngle / 2); q1 = 0;  q2 = sin(rollAngle / 2); q3 = 0;
-			//calculating magnitude for normalizing
+			//magnitude for normalization
 			mag = sqrt(q0*q0 + q2*q2);
 			q0 /= mag;
 			q2 /= mag;
@@ -282,7 +251,7 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 		if (keys[GLFW_KEY_DOWN])
 		{
 			if (rollAngle > -3.14f) {
-				rollAngle -= 0.1f;
+				rollAngle -= 0.001f;
 			}
 			else {
 				rollAngle = -3.14f;
@@ -300,58 +269,52 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 		if (keys[GLFW_KEY_LEFT])
 		{
 			if (angle > -3.14f) {
-				angle -= .1f;
+				angle -= .001f;
 			}
 			else {
 				angle = -3.14f;
 			}
-			rollQuat *= glm::quat(cos(angle), 0, 0, sin(angle));
+			rollQuat *= glm::quat(cos(angle/2), 0, 0, sin(angle/2));
 			mat_cast *= glm::mat4_cast(rollQuat);
 		}
 
 		if (keys[GLFW_KEY_RIGHT])
 		{
 			if (angle < 3.14f) {
-				angle += .1f;
+				angle += .001f;
 			}
 			else {
 				angle = 3.14f;
 			}
-			rollQuat *= glm::quat(cos(angle), 0, 0, sin(angle));
+			rollQuat *= glm::quat(cos(angle/2), 0, 0, sin(angle/2));
 
 			mat_cast *= glm::mat4_cast(rollQuat);
 		}
 		if (keys[GLFW_KEY_K])
 		{
 			if (pitchAngle > -3.14f) {
-				pitchAngle -= .1f;
+				pitchAngle -= .001f;
 			}
 			else {
-				pitchAngle = 0.f;
+				pitchAngle = -3.14f;
 			}
 
-			pitchQuat *= glm::quat(0, 0, cos(pitchAngle), sin(pitchAngle));
+			pitchQuat *= glm::quat(0, 0, cos(pitchAngle/2), sin(pitchAngle/2));
 
 			mat_cast *= glm::mat4_cast(pitchQuat);
 		}
 		if (keys[GLFW_KEY_L])
 		{
 			if (pitchAngle < 3.14f) {
-				pitchAngle += .1f;
+				pitchAngle += .001f;
 			}
 			else {
-				pitchAngle = 0.f;
+				pitchAngle = 3.14f;
 			}
-			pitchQuat *= glm::quat(0, 0, cos(pitchAngle), sin(pitchAngle));
+			pitchQuat *= glm::quat(0, 0, cos(pitchAngle/2), sin(pitchAngle/2));
 
 			mat_cast *= glm::mat4_cast(pitchQuat);
 		}
-
-		/*
-		mat_cast = glm::mat4_cast(Quat);
-		mat_cast1 = glm::mat4_cast(rollQuat);
-		mat_cast2 = glm::mat4_cast(pitchQuat);
-		*/
 	}
 
 }
@@ -361,6 +324,7 @@ int main()
 {
 	rot = false;
 	mat_cast = glm::mat4();
+	thirdPerson = glm::mat4();
 
 	Quat = glm::quat();
 	rollQuat = glm::quat();
@@ -418,10 +382,10 @@ int main()
 		//RenderPass(camera.calculateViewMatrix(), projection);
 
 		if (camera.firstPerson) {
-			RenderPass(glm::inverse(model)*objectCoord, projection);
+			RenderPass(glm::inverse(model), projection);
 		}else if (camera.thirdPerson) {
-			//change here for the third person
-			RenderPass(camera.calculateViewMatrix(), projection);
+			//change here for third person
+			RenderPass(thirdPerson, projection);
 		}else {
 			RenderPass(camera.calculateViewMatrix(), projection);
 		}

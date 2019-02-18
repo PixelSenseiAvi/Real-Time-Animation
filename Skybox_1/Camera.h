@@ -21,8 +21,17 @@ public:
 
 	glm::mat4 calculateViewMatrix();
 
+
+	glm::mat4 perspectiveMatrix;
+
 	GLboolean firstPerson;
 	GLboolean thirdPerson;
+
+	GLfloat verticalAngle = 0.0f;
+	GLfloat horizontalAngle = 0.0f;
+
+	glm::vec3 offset;
+	GLfloat distance;
 
 	~Camera();
 
@@ -41,8 +50,7 @@ private:
 
 	GLuint count;
 
-	GLfloat disatnceFromthePlayer = 50.;
-	GLfloat angle = 0.;
+	GLfloat angle = 0.f;
 
 	void update();
 };

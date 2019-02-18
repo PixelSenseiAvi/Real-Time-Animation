@@ -16,6 +16,8 @@ Camera::Camera(glm::vec3 startPosition, glm::vec3 startUp, GLfloat startYaw, GLf
 	firstPerson = true;
 	count = 0;
 
+	distance = 25.f;
+
 	update();
 }
 
@@ -26,11 +28,13 @@ void Camera::keyControl(bool* keys, GLfloat deltaTime)
 	if (keys[GLFW_KEY_W])
 	{
 		position += front * velocity;
+		distance += (GLfloat)(20 * velocity);
 	}
 
 	if (keys[GLFW_KEY_S])
 	{
 		position -= front * velocity;
+		distance -= (GLfloat)(20 * velocity);
 	}
 
 	if (keys[GLFW_KEY_A])
@@ -75,6 +79,10 @@ void Camera::mouseControl(GLfloat xChange, GLfloat yChange)
 		pitch = -89.0f;
 	}
 
+	//Later remember to set limits [0 - 2*pi]
+	verticalAngle = yChange;
+	horizontalAngle = xChange;
+
 	update();
 }
 
@@ -102,7 +110,13 @@ void Camera::update()
 
 	right = glm::normalize(glm::cross(front, worldUp));
 	up = glm::normalize(glm::cross(right, front));
-
+	
+	//TO-DO: add the horzintal and vertical angles occured by rolling // consider angles w,a, s,d
+	offset.x = distance * cos(glm::radians(verticalAngle))*(-sin(glm::radians(horizontalAngle)));
+	offset.y = distance * sin(glm::radians(verticalAngle));
+	offset.z = distance * cos(glm::radians(verticalAngle)) * cos(glm::radians(horizontalAngle));
+	offset.x = -offset.x;
+	offset.z = -offset.z;
 }
 
 
