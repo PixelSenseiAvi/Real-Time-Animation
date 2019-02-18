@@ -83,6 +83,13 @@ void Camera::mouseControl(GLfloat xChange, GLfloat yChange)
 	verticalAngle = yChange;
 	horizontalAngle = xChange;
 
+	//TO-DO: add the horzontal and vertical angles occured by rolling // consider angles w,a, s,d
+	offset.x = distance * cos(glm::radians(verticalAngle))*(-sin(glm::radians(horizontalAngle)));
+	offset.y = distance * sin(glm::radians(verticalAngle));
+	offset.z = distance * cos(glm::radians(verticalAngle)) * cos(glm::radians(horizontalAngle));
+	offset.x = -offset.x;
+	offset.z = -offset.z;
+
 	update();
 }
 
@@ -111,12 +118,6 @@ void Camera::update()
 	right = glm::normalize(glm::cross(front, worldUp));
 	up = glm::normalize(glm::cross(right, front));
 	
-	//TO-DO: add the horzintal and vertical angles occured by rolling // consider angles w,a, s,d
-	offset.x = distance * cos(glm::radians(verticalAngle))*(-sin(glm::radians(horizontalAngle)));
-	offset.y = distance * sin(glm::radians(verticalAngle));
-	offset.z = distance * cos(glm::radians(verticalAngle)) * cos(glm::radians(horizontalAngle));
-	offset.x = -offset.x;
-	offset.z = -offset.z;
 }
 
 

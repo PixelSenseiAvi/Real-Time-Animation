@@ -28,6 +28,10 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
+
 
 const float toRadians = 3.14159265f / 180.0f;
 
@@ -74,7 +78,7 @@ static const char* fShader = "Shaders/shader.frag";
 
 bool rot;
 glm::mat4 thirdPerson;
-
+glm::vec3 offset;
 
 void CreateShaders()
 {
@@ -87,7 +91,7 @@ void CreateShaders()
 void RenderScene()
 {
 	model = glm::mat4();
-	model = glm::translate(model, glm::vec3(0.0f, 2.0f, -2.5f));
+	//model = glm::translate(model, glm::vec3(0.0f, -2.0f, 2.5f));
 	model = glm::scale(model, glm::vec3(2.f, 2.f, 2.f));
 	//model = glm::rotate(model, 3.14f, glm::vec3(0, 1, 0));
 	
@@ -108,6 +112,9 @@ void RenderScene()
 	//set 0 to the above
 	sphere.RenderModel();
 	
+	glm::mat4 propModel = glm::mat4();
+	propModel *= model;
+	//propModel = glm::translate(propModel, glm::vec3())
 	//propeller.RenderModel();
 }
 
@@ -230,6 +237,9 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 		
 		GLfloat q0, q1, q2, q3, mag;
 		
+		if (keys[GLFW_KEY_D]) {
+			glfwSetInputMode(mainWindow.mainWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		}
 		//yaw
 		if (keys[GLFW_KEY_UP])
 		{
@@ -365,6 +375,27 @@ int main()
 		uniformSpecularIntensity = 0, uniformShininess = 0;
 	glm::mat4 projection = glm::perspective(glm::radians(60.0f), (GLfloat)mainWindow.getBufferWidth() / mainWindow.getBufferHeight(), 0.1f, 100.0f);
 
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+
+	const char* glsl_version = "#version 330";
+	// Setup Platform/Renderer bindings
+	ImGui_ImplGlfw_InitForOpenGL(mainWindow.mainWindow, true);
+	ImGui_ImplOpenGL3_Init(glsl_version);
+
+	bool show_demo_window = true;
+	bool show_another_window = false;
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+
 	//main loop
 	while (!mainWindow.getShouldClose())
 	{
@@ -379,6 +410,50 @@ int main()
 		camera.keyControl(mainWindow.getsKeys(), deltaTime);
 		camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
 
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+		if (show_demo_window)
+			ImGui::ShowDemoWindow(&show_demo_window);
+
+		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+		{
+			static float f = 0.0f;
+			static int counter = 0;
+
+			ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+			ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+			ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+			ImGui::Checkbox("Another Window", &show_another_window);
+
+			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+			ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+				counter++;
+			ImGui::SameLine();
+			ImGui::Text("counter = %d", counter);
+
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::End();
+		}
+
+		// 3. Show another simple window.
+		if (show_another_window)
+		{
+			ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+			ImGui::Text("Hello from another window!");
+			if (ImGui::Button("Close Me"))
+				show_another_window = false;
+			ImGui::End();
+		}
+
+		// Rendering
+		
+
 		//RenderPass(camera.calculateViewMatrix(), projection);
 
 		if (camera.firstPerson) {
@@ -389,7 +464,8 @@ int main()
 		}else {
 			RenderPass(camera.calculateViewMatrix(), projection);
 		}
-
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		mainWindow.swapBuffers();
 	}
 

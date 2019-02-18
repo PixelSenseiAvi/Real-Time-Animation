@@ -22,17 +22,17 @@ public:
 	bool* getsKeys() { return keys; }
 	GLfloat getXChange();
 	GLfloat getYChange();
-
+	GLFWwindow* mainWindow;
 	void swapBuffers() { glfwSwapBuffers(mainWindow); }
 
 	~Window();
 
 private:
-	GLFWwindow* mainWindow;
+	
 
 	GLint width, height;
 	GLint bufferWidth, bufferHeight;
-
+	
 	bool keys[1024];
 
 	GLfloat lastX;
