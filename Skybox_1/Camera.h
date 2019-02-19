@@ -20,12 +20,8 @@ public:
 	glm::vec3 getCameraDirection();
 
 	glm::mat4 calculateViewMatrix();
-
-
+	
 	glm::mat4 perspectiveMatrix;
-
-	GLboolean firstPerson;
-	GLboolean thirdPerson;
 
 	GLfloat verticalAngle = 0.0f;
 	GLfloat horizontalAngle = 0.0f;

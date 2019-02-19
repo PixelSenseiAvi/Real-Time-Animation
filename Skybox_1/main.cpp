@@ -66,9 +66,7 @@ GLuint skyboxLocation;
 GLfloat angle =0.f, rollAngle = 0.f, pitchAngle = 0.f;
 glm::quat Quat, rollQuat, pitchQuat;
 glm::mat4 mat_cast;
-GLfloat roll =0.f, pitch =0.f, yaw =0.f;
 
-GLboolean ifroll, ifyaw, ifpitch;
 
 // Vertex Shader
 static const char* vShader = "Shaders/shader.vert";
@@ -76,9 +74,12 @@ static const char* vShader = "Shaders/shader.vert";
 // Fragment Shader
 static const char* fShader = "Shaders/shader.frag";
 
-bool rot;
+bool eulerCheck, quaterCheck;
 glm::mat4 thirdPerson;
 glm::vec3 offset;
+
+bool fPerson = false, tPerson = false, freelook = true;
+
 
 void CreateShaders()
 {
@@ -156,13 +157,12 @@ void RenderPass(glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
 void bind_keys(bool* keys, GLfloat deltaTime)
 {
 	//GLfloat velocity = deltaTime *;
-	if (keys[GLFW_KEY_E]) {
-		if (rot == false) { rot = true; }
-		else { rot = false; }
+	if (keys[GLFW_KEY_U]) {
+		glfwSetInputMode(mainWindow.mainWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 
 	//Euler
-	if (rot == true) {
+	if (eulerCheck) {
 		if (keys[GLFW_KEY_UP])
 		{
 			if (rollAngle < 90.f) {
@@ -231,30 +231,27 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 		}
 	}
 	//quaternion
-	else {
-		//try negating other axis w.r.t. to the axis of rotation
+	else if(quaterCheck){
 		//reference: https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
-		
+
 		GLfloat q0, q1, q2, q3, mag;
-		
-		if (keys[GLFW_KEY_D]) {
-			glfwSetInputMode(mainWindow.mainWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		}
+
 		//yaw
 		if (keys[GLFW_KEY_UP])
 		{
 			if (rollAngle < 3.14f) {
 				rollAngle += .001f;
-			}else {
+			}
+			else {
 				rollAngle = 3.14f;
 			}
 			q0 = cos(rollAngle / 2); q1 = 0;  q2 = sin(rollAngle / 2); q3 = 0;
 			//magnitude for normalization
-			mag = sqrt(q0*q0 + q2*q2);
+			mag = sqrt(q0*q0 + q2 * q2);
 			q0 /= mag;
 			q2 /= mag;
-			
-			Quat *= glm::quat(q0, q1,q2,q3);
+
+			Quat *= glm::quat(q0, q1, q2, q3);
 			mat_cast *= glm::mat4_cast(Quat);
 		}
 
@@ -284,7 +281,12 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 			else {
 				angle = -3.14f;
 			}
-			rollQuat *= glm::quat(cos(angle/2), 0, 0, sin(angle/2));
+			q0 = cos(angle / 2), q1 = sin(angle / 2), q2 = 0, q3 = 0;
+			//normalizing
+			mag = sqrt(q0*q0 + q1 * q1);
+			q0 /= mag;
+			q1 /= mag;
+			rollQuat *= glm::quat(q0, q1, q2, q3);
 			mat_cast *= glm::mat4_cast(rollQuat);
 		}
 
@@ -296,8 +298,12 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 			else {
 				angle = 3.14f;
 			}
-			rollQuat *= glm::quat(cos(angle/2), 0, 0, sin(angle/2));
-
+			q0 = cos(angle / 2), q1 = sin(angle / 2), q2 = 0, q3 = 0;
+			//normalizing
+			mag = sqrt(q0*q0 + q1 * q1);
+			q0 /= mag;
+			q1 /= mag;
+			rollQuat *= glm::quat(q0, q1, q2, q3);
 			mat_cast *= glm::mat4_cast(rollQuat);
 		}
 		if (keys[GLFW_KEY_K])
@@ -308,8 +314,11 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 			else {
 				pitchAngle = -3.14f;
 			}
-
-			pitchQuat *= glm::quat(0, 0, cos(pitchAngle/2), sin(pitchAngle/2));
+			q0 = cos(pitchAngle / 2), q1 = 0, q2 = 0, q3 = sin(pitchAngle / 2);
+			mag = sqrt(q0*q0 + q3 * q3);
+			q0 /= mag;
+			q3 /= mag;
+			pitchQuat *= glm::quat(q0, q1, q2, q3);
 
 			mat_cast *= glm::mat4_cast(pitchQuat);
 		}
@@ -321,18 +330,65 @@ void bind_keys(bool* keys, GLfloat deltaTime)
 			else {
 				pitchAngle = 3.14f;
 			}
-			pitchQuat *= glm::quat(0, 0, cos(pitchAngle/2), sin(pitchAngle/2));
+			q0 = cos(pitchAngle / 2), q1 = 0, q2 = 0, q3 = sin(pitchAngle / 2);
+			mag = sqrt(q0*q0 + q3 * q3);
+			q0 /= mag;
+			q3 /= mag;
+			pitchQuat *= glm::quat(q0, q1, q2, q3);
 
 			mat_cast *= glm::mat4_cast(pitchQuat);
 		}
 	}
-
 }
 
 
+/*
+void EulerAngles(GLfloat rotAngle, GLfloat yawAngle, GLfloat pitchAngle) {
+
+	mat_cast *= glm::rotate(mat_cast, glm::degrees(rotAngle), glm::vec3(1, 0, 0));
+	mat_cast *= glm::rotate(mat_cast, glm::degrees(yawAngle), glm::vec3(0, 1, 0));
+	mat_cast *= glm::rotate(mat_cast, glm::radians(pitchAngle), glm::vec3(0, 0, 1));
+}
+
+
+void Quaternions(GLfloat rotAngle, GLfloat yawAngle, GLfloat pitchAngle) {
+
+	if (rotAngle != .0f) {
+		GLfloat q0, q1, q2, q3, mag;
+		q0 = cos(rotAngle / 2); q1 = sin(rotAngle / 2);  q2 = 0; q3 = 0;
+		//magnitude for normalization
+		mag = sqrt(q0*q0 + q1 * q1);
+		q0 /= mag;
+		q1 /= mag;
+
+		Quat *= glm::quat(q0, q1, q2, q3);
+	}
+	if (yawAngle != .0f) {
+		GLfloat q0, q1, q2, q3, mag;
+		q0 = cos(yawAngle / 2); q1 = 0;  q2 = sin(yawAngle / 2); q3 = 0;
+		//magnitude for normalization
+		mag = sqrt(q0*q0 + q2 * q2);
+		q0 /= mag;
+		q2 /= mag;
+
+		Quat *= glm::quat(q0, q1, q2, q3);
+	}
+	if (pitchAngle != .0f) {
+		GLfloat q0, q1, q2, q3, mag;
+		q0 = cos(pitchAngle / 2); q1 = 0;  q2 = 0; q3 = sin(pitchAngle / 2);
+		//magnitude for normalization
+		mag = sqrt(q0*q0 + q3 * q3);
+		q0 /= mag;
+		q3 /= mag;
+
+		Quat *= glm::quat(q0, q1, q2, q3);
+	}
+	mat_cast *= glm::mat4_cast(Quat);
+}
+*/
+
 int main() 
 {
-	rot = false;
 	mat_cast = glm::mat4();
 	thirdPerson = glm::mat4();
 
@@ -359,7 +415,6 @@ int main()
 
 	propeller = Model();
 	propeller.LoadModel("Plane/propeller.obj");
-
 
 	std::vector<std::string> skyboxFaces;
 	skyboxFaces.push_back("Textures/mp_cloud9/desertsky_rt.tga");
@@ -392,9 +447,8 @@ int main()
 	ImGui_ImplOpenGL3_Init(glsl_version);
 
 	bool show_demo_window = true;
-	bool show_another_window = false;
+	//bool show_another_window = false;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
 
 	//main loop
 	while (!mainWindow.getShouldClose())
@@ -414,58 +468,53 @@ int main()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-		if (show_demo_window)
-			ImGui::ShowDemoWindow(&show_demo_window);
-
-		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 		{
-			static float f = 0.0f;
 			static int counter = 0;
 
-			ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+			ImGui::Begin("Flight Deck");                          
 
-			ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-			ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-			ImGui::Checkbox("Another Window", &show_another_window);
+			ImGui::Text("Controls");  
+			ImGui::Checkbox("Euler", &eulerCheck);
+			ImGui::Checkbox("Quaternions", &quaterCheck);
 
-			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-			ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+			/*
+			ImGui::SliderFloat("rotate", &rollAngle, -3.14f, 3.14f);    
+			ImGui::SliderFloat("pitch", &pitchAngle, -3.14f, 3.14f);
+			ImGui::SliderFloat("yaw", &angle, -3.14f, 3.14f);
+			*/
 
-			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-				counter++;
-			ImGui::SameLine();
-			ImGui::Text("counter = %d", counter);
+			ImGui::Text("Camera");
+			ImGui::Checkbox("First Person", &fPerson);
+			ImGui::Checkbox("Third Person", &tPerson);
+			ImGui::Checkbox("Free Look", &freelook);
 
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::End();
-		}
-
-		// 3. Show another simple window.
-		if (show_another_window)
-		{
-			ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-			ImGui::Text("Hello from another window!");
-			if (ImGui::Button("Close Me"))
-				show_another_window = false;
+			
 			ImGui::End();
 		}
 
 		// Rendering
-		
-
-		//RenderPass(camera.calculateViewMatrix(), projection);
-
-		if (camera.firstPerson) {
+		if (fPerson) {
 			RenderPass(glm::inverse(model), projection);
-		}else if (camera.thirdPerson) {
+		}else if (tPerson) {
 			//change here for third person
 			RenderPass(thirdPerson, projection);
-		}else {
+		}else if(freelook){
 			RenderPass(camera.calculateViewMatrix(), projection);
 		}
+
+		/*
+		if (eulerCheck) {
+			EulerAngles(rollAngle, angle, pitchAngle);
+		}
+		else if (quaterCheck) {
+			Quaternions(rollAngle, angle, pitchAngle);
+		}
+		*/
+
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		mainWindow.swapBuffers();
 	}
 

@@ -13,7 +13,6 @@ Camera::Camera(glm::vec3 startPosition, glm::vec3 startUp, GLfloat startYaw, GLf
 	moveSpeed = startMoveSpeed;
 	turnSpeed = startTurnSpeed;
 
-	firstPerson = true;
 	count = 0;
 
 	distance = 25.f;
@@ -45,19 +44,6 @@ void Camera::keyControl(bool* keys, GLfloat deltaTime)
 	if (keys[GLFW_KEY_D])
 	{
 		position += right * velocity;
-	}
-	if (keys[GLFW_KEY_C])
-	{
-		count++;
-		if (count % 3 == 0) { firstPerson = false; thirdPerson = false;}
-		else if (count % 3 == 1) {
-			firstPerson = false;
-			thirdPerson = true;
-		}
-		else if(count %3==2){
-			firstPerson = true;
-			thirdPerson = false;
-		}
 	}
 }
 
